@@ -43,6 +43,16 @@ repeatable <- function(rngfunc, seed = stats::runif(1, 0, .Machine$integer.max))
   }
 }
 
+seeds <- function() {
+  short_digest <- function(x) {
+    substr(digest::digest(x), 1, 6)
+  }
+  paste0(
+    "\nGlobal seed:  ", short_digest(.GlobalEnv$.Random.seed),
+    "\nPrivate seed: ", short_digest(shiny:::.globals$ownSeed), "\n"
+  )
+}
+
 # Temporarily set x in env to value, evaluate expr, and
 # then restore x to its original state
 withTemporary <- function(env, x, value, expr, unset = FALSE) {
@@ -72,6 +82,10 @@ withTemporary <- function(env, x, value, expr, unset = FALSE) {
 # Evaluate an expression using Shiny's own private stream of
 # randomness (not affected by set.seed).
 withPrivateSeed <- function(expr) {
+  on.exit({
+    cat(seeds())
+  })
+
   withTemporary(.GlobalEnv, ".Random.seed",
     .globals$ownSeed, unset=is.null(.globals$ownSeed), {
       tryCatch({
